@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "node_modules/.bin/mcp-server-filesystem",
+      "args": ["C:\\headers"]
+    },
+    "filesystem-npx": {
+      "command": "npx",
+      "args": ["@modelcontextprotocol/server-filesystem", "."]
+    }
+  }
+}
