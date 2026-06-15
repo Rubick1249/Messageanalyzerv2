@@ -4,6 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 @AGENTS.md
 
+## Workflow
+
+Before starting any work, state how you will verify it.
+After finishing, run the verification and report results.
+
+Verification for this repo (no test framework configured):
+1. `npm run build` — catches TypeScript and compilation errors
+2. `npm run lint` — catches ESLint issues
+
 ## Commands
 
 ```bash
