@@ -1,0 +1,26 @@
+---
+import { Analyzer } from '../components/Analyzer';
+import '../styles/tokens.css';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Analyze Microsoft 365, EOP, and Defender for Office 365 email headers. Every field explained, sourced, and graded for trustworthiness." />
+    <title>HeaderLens — M365 Email Header Analyzer</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <Analyzer client:load />
+  </body>
+</html>

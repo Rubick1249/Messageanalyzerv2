@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-surface-base: #0C0A14;
+  --color-surface-card: #131020;
+  --color-surface-raised: #1A172B;
+  --color-surface-border: #27223E;
+
+  --color-text-primary: #F5F4FF;
+  --color-text-secondary: #C8C5DC;
+  --color-text-tertiary: #9490AB;
+
+  --color-accent-azure: #22D3EE;
+  --color-accent-violet: #F472B6;
+
+  --color-verdict-pass: #4ADE80;
+  --color-verdict-warn: #FDE047;
+  --color-verdict-fail: #FB7185;
+  --color-verdict-info: #818CF8;
+  --color-verdict-neutral: #94A3B8;
+
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+:root {
+  --radius-control: 8px;
+  --radius-card: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus ring — visible on all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--color-accent-azure);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Animations */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleYIn {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@keyframes countUp {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
+}
