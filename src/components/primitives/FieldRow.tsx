@@ -14,7 +14,7 @@ interface Props {
 export function FieldRow({ field, valueDisplay, mono = false, showRaw = true }: Props) {
   const displayValue = valueDisplay ?? (
     field.value !== null
-      ? <span className={`break-all ${mono ? 'font-mono' : ''}`}>{String(field.value)}</span>
+      ? <span className={`${mono ? 'font-mono break-all' : 'break-words'}`}>{String(field.value)}</span>
       : <span className="text-text-tertiary italic">—</span>
   );
 

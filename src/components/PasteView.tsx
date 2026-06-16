@@ -153,13 +153,13 @@ export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error 
       <div className="mt-14 w-full max-w-3xl">
         <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-4">How headers work</p>
         <div className="overflow-x-auto pb-2 -mx-1 px-1">
-          <div className="flex sm:grid sm:grid-cols-3 gap-4" style={{ minWidth: 'min(100%, 36rem)' }}>
+          <div className="flex sm:grid sm:grid-cols-3 gap-4">
             {[
               { icon: '🧮', title: 'SPF Breaks at 10', body: 'RFC 7208 section 4.6.4 caps SPF at exactly 10 DNS lookups. Hit 11 and the spec mandates a hard PermError — even if every lookup would have passed.' },
               { icon: '🔃', title: 'Headers Run Backwards', body: 'Each hop prepends its Received header, so the raw stack is newest-first. The very bottom Received line is where the message was born.' },
               { icon: '👻', title: 'Bcc Disappears at the MTA', body: "Bcc addresses are stripped by the sending MTA before delivery. Even if you're the Bcc recipient, your address never appears anywhere in the raw headers." },
             ].map(f => (
-              <div key={f.title} className="rounded-xl border border-surface-border bg-surface-card p-4 space-y-1.5 shrink-0 sm:shrink min-w-[240px] sm:min-w-0">
+              <div key={f.title} className="rounded-xl border border-surface-border bg-surface-card p-4 space-y-1.5 w-[260px] sm:w-auto shrink-0">
                 <div className="text-xl" aria-hidden="true">{f.icon}</div>
                 <p className="text-sm font-semibold text-text-primary">{f.title}</p>
                 <p className="text-xs text-text-secondary leading-relaxed">{f.body}</p>
