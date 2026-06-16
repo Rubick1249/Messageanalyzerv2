@@ -10,6 +10,7 @@ interface Props {
 
 export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error }: Props) {
   const [dragging, setDragging] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const loadFile = (file: File) => {
@@ -49,10 +50,12 @@ export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error 
       {/* Paste area */}
       <div className="w-full max-w-3xl space-y-3">
         <div
-          className={`relative rounded-xl border-2 transition-colors duration-150 ${
+          className={`relative rounded-xl transition-colors duration-150 ${
             dragging
-              ? 'border-accent-azure bg-accent-azure/5'
-              : 'border-surface-border bg-surface-card hover:border-surface-raised'
+              ? 'border-2 border-accent-azure bg-accent-azure/5'
+              : text
+              ? 'border-2 border-surface-border bg-surface-card hover:border-surface-raised'
+              : 'border-2 border-dashed border-surface-border/50 bg-surface-card hover:border-accent-azure/40'
           }`}
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
@@ -64,13 +67,7 @@ export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error 
             ref={textareaRef}
             value={text}
             onChange={e => onTextChange(e.target.value)}
-            placeholder={[
-              'Paste raw email headers here…',
-              '',
-              'In Outlook: File → Properties → Internet headers',
-              'In Outlook on the web: ⋯ (More actions) → View → Message details',
-              'Drag and drop a .txt or .eml file also works.',
-            ].join('\n')}
+            placeholder="Paste raw email headers here…"
             className="w-full bg-transparent resize-none text-sm font-mono text-text-primary placeholder:text-text-tertiary p-4 outline-none min-h-[280px] leading-relaxed"
             spellCheck={false}
             disabled={analyzing}
@@ -78,6 +75,26 @@ export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error 
           {dragging && (
             <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-accent-azure/5 pointer-events-none">
               <p className="text-accent-azure font-medium">Drop file to load headers</p>
+            </div>
+          )}
+        </div>
+
+        {/* Collapsible instructions */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowInstructions(v => !v)}
+            className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors"
+            aria-expanded={showInstructions}
+          >
+            <span aria-hidden="true" className="transition-transform duration-150" style={{ display: 'inline-block', transform: showInstructions ? 'rotate(90deg)' : 'rotate(0deg)' }}>▸</span>
+            Where do I find headers?
+          </button>
+          {showInstructions && (
+            <div className="mt-2 p-3 rounded-lg border border-surface-border bg-surface-raised text-xs space-y-1.5">
+              <p><strong className="text-text-primary font-medium">Outlook desktop:</strong> <span className="text-text-secondary">File → Properties → Internet headers</span></p>
+              <p><strong className="text-text-primary font-medium">Outlook on the web:</strong> <span className="text-text-secondary">⋯ (More actions) → View → Message details</span></p>
+              <p className="text-text-tertiary">Drag and drop a .txt or .eml file also works.</p>
             </div>
           )}
         </div>
@@ -120,7 +137,7 @@ export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error 
           />
           <label
             htmlFor="file-load"
-            className="px-4 py-2 rounded-lg border border-surface-border text-sm text-text-secondary hover:border-accent-azure hover:text-accent-azure cursor-pointer transition-colors duration-150"
+            className="px-4 py-2 rounded-lg border border-surface-border/60 text-sm text-text-tertiary hover:border-accent-azure/60 hover:text-accent-azure cursor-pointer transition-colors duration-150 bg-transparent"
           >
             Load file
           </label>
@@ -133,18 +150,23 @@ export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error 
       </div>
 
       {/* Feature callouts */}
-      <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full">
-        {[
-          { icon: '🧮', title: 'SPF Breaks at 10', body: 'RFC 7208 section 4.6.4 caps SPF at exactly 10 DNS lookups. Hit 11 and the spec mandates a hard PermError — even if every lookup would have passed.' },
-          { icon: '🔃', title: 'Headers Run Backwards', body: 'Each hop prepends its Received header, so the raw stack is newest-first. The very bottom Received line is where the message was born.' },
-          { icon: '👻', title: 'Bcc Disappears at the MTA', body: "Bcc addresses are stripped by the sending MTA before delivery. Even if you're the Bcc recipient, your address never appears anywhere in the raw headers." },
-        ].map(f => (
-          <div key={f.title} className="rounded-xl border border-surface-border bg-surface-card p-4 space-y-1.5">
-            <div className="text-xl" aria-hidden="true">{f.icon}</div>
-            <p className="text-sm font-semibold text-text-primary">{f.title}</p>
-            <p className="text-xs text-text-secondary leading-relaxed">{f.body}</p>
+      <div className="mt-14 w-full max-w-3xl">
+        <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest mb-4">How headers work</p>
+        <div className="overflow-x-auto pb-2 -mx-1 px-1">
+          <div className="flex sm:grid sm:grid-cols-3 gap-4" style={{ minWidth: 'min(100%, 36rem)' }}>
+            {[
+              { icon: '🧮', title: 'SPF Breaks at 10', body: 'RFC 7208 section 4.6.4 caps SPF at exactly 10 DNS lookups. Hit 11 and the spec mandates a hard PermError — even if every lookup would have passed.' },
+              { icon: '🔃', title: 'Headers Run Backwards', body: 'Each hop prepends its Received header, so the raw stack is newest-first. The very bottom Received line is where the message was born.' },
+              { icon: '👻', title: 'Bcc Disappears at the MTA', body: "Bcc addresses are stripped by the sending MTA before delivery. Even if you're the Bcc recipient, your address never appears anywhere in the raw headers." },
+            ].map(f => (
+              <div key={f.title} className="rounded-xl border border-surface-border bg-surface-card p-4 space-y-1.5 shrink-0 sm:shrink min-w-[240px] sm:min-w-0">
+                <div className="text-xl" aria-hidden="true">{f.icon}</div>
+                <p className="text-sm font-semibold text-text-primary">{f.title}</p>
+                <p className="text-xs text-text-secondary leading-relaxed">{f.body}</p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </main>
   );

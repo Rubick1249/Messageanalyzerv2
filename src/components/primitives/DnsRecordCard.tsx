@@ -12,7 +12,10 @@ interface Props {
 
 export function DnsRecordCard({ type, name, value, status, note }: Props) {
   return (
-    <div className="rounded-lg border border-surface-border bg-surface-raised p-3 space-y-2">
+    <div
+      className="rounded-lg border border-surface-border bg-surface-raised p-3 space-y-2"
+      style={{ borderLeftWidth: '3px', borderLeftColor: 'var(--color-accent-azure)' }}
+    >
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono font-semibold text-accent-azure bg-accent-azure/10 px-1.5 py-0.5 rounded border border-accent-azure/30">

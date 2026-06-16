@@ -8,9 +8,10 @@ interface Props {
   field: Field<unknown>;
   valueDisplay?: React.ReactNode;
   mono?: boolean;
+  showRaw?: boolean;
 }
 
-export function FieldRow({ field, valueDisplay, mono = false }: Props) {
+export function FieldRow({ field, valueDisplay, mono = false, showRaw = true }: Props) {
   const displayValue = valueDisplay ?? (
     field.value !== null
       ? <span className={`break-all ${mono ? 'font-mono' : ''}`}>{String(field.value)}</span>
@@ -33,7 +34,7 @@ export function FieldRow({ field, valueDisplay, mono = false }: Props) {
             note={field.note}
           />
         </div>
-        {field.raw && (
+        {showRaw && field.raw && (
           <div className="flex items-start gap-2 flex-wrap">
             <code className="text-xs font-mono text-text-tertiary bg-surface-raised px-1.5 py-0.5 rounded border border-surface-border break-all">
               {field.raw}

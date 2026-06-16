@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import type { AnalysisResult } from '@/lib/types';
+import type { AnalysisResult, StatusValue } from '@/lib/types';
 import { useReducedMotion } from '@/lib/hooks';
 import { SectionCard } from './primitives/SectionCard';
 import { SummarySection } from './sections/SummarySection';
@@ -80,6 +80,63 @@ const ALL_SECTIONS = [
   { id: 'summary' },
   ...SECTION_GROUPS.flatMap(g => g.sections),
 ];
+
+function sectionStatus(id: string, result: AnalysisResult): 'pass' | 'warn' | 'fail' | 'info' | null {
+  const auth = result.authentication;
+
+  const worst = (...vals: (StatusValue | undefined | null)[]): 'pass' | 'warn' | 'fail' | 'info' | null => {
+    if (vals.includes('fail')) return 'fail';
+    if (vals.includes('warn')) return 'warn';
+    if (vals.includes('pass')) return 'pass';
+    if (vals.includes('info')) return 'info';
+    return null;
+  };
+
+  switch (id) {
+    case 'delivery-path':
+      return result.deliveryPath.length > 0 ? 'pass' : null;
+    case 'auth':
+      return worst(auth.spf.result.status, auth.dkim.result.status, auth.dmarc.result.status, auth.compauth.status);
+    case 'arc':
+      return auth.arc.sets.length > 0 ? (auth.arc.overrodeAuthFailure ? 'warn' : 'info') : null;
+    case 'reconciliation': {
+      const anyDiscrepancy = auth.authResultsStamps.some(s => s.discrepancy);
+      return auth.authResultsStamps.length > 0 ? (anyDiscrepancy ? 'warn' : 'pass') : null;
+    }
+    case 'antispam':
+      return result.verdicts.disposition.status === 'pass' ? 'pass' : result.verdicts.disposition.status;
+    case 'mdo':
+      return result.mdo.safeLinks.value || result.mdo.safeAttachments.value ? 'info' : null;
+    case 'context':
+      return result.context.isExternal.value ? 'warn' : 'pass';
+    case 'label':
+      return result.sensitivityLabel ? 'info' : null;
+    case 'impersonation': {
+      const risk = result.impersonation.riskLevel;
+      if (risk === 'none') return null;
+      if (risk === 'low') return 'info';
+      if (risk === 'medium') return 'warn';
+      return 'fail';
+    }
+    case 'thread':
+      return result.thread ? 'info' : null;
+    case 'attachments':
+      return result.attachments.value?.hasAttach ? 'info' : null;
+    default:
+      return null;
+  }
+}
+
+function StatusDot({ status }: { status: ReturnType<typeof sectionStatus> }) {
+  if (!status) return null;
+  const cls = {
+    pass: 'bg-verdict-pass',
+    warn: 'bg-verdict-warn',
+    fail: 'bg-verdict-fail',
+    info: 'bg-verdict-info',
+  }[status];
+  return <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cls}`} aria-hidden="true" />;
+}
 
 export function ResultsView({ result, onBack }: Props) {
   const reduced = useReducedMotion();
@@ -230,8 +287,9 @@ export function ResultsView({ result, onBack }: Props) {
             {SECTION_GROUPS.map(group => {
               const colors = GROUP_COLORS[group.id];
               return (
-                <div key={group.id} className="pt-3">
-                  <div className={`px-3 py-1 text-[10px] font-semibold uppercase tracking-widest ${colors.text} opacity-70`}>
+                <div key={group.id} className="pt-4">
+                  {/* Muted group label — category, not a nav item */}
+                  <div className="px-3 py-1 text-[9px] font-medium uppercase tracking-widest text-text-tertiary/50">
                     {group.label}
                   </div>
                   {group.sections.map(({ id, label }) => (
@@ -240,13 +298,14 @@ export function ResultsView({ result, onBack }: Props) {
                       type="button"
                       onClick={() => scrollTo(id)}
                       aria-current={activeSection === id ? 'true' : undefined}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                      className={`w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
                         activeSection === id
                           ? `${colors.bg} ${colors.text} font-medium`
-                          : 'text-text-tertiary hover:text-text-secondary hover:bg-surface-raised'
+                          : 'text-text-secondary hover:text-text-primary hover:bg-surface-raised'
                       }`}
                     >
-                      {label}
+                      <span>{label}</span>
+                      <StatusDot status={sectionStatus(id, result)} />
                     </button>
                   ))}
                 </div>
