@@ -24,12 +24,12 @@ export function parseAuthResults(value: string): AuthTokens {
   t.spfIp = m(/sender IP is ([^\s);,]+)/i);
   t.spfMailFrom = m(/smtp\.mailfrom=([^\s;,]+)/i);
 
-  t.dkim = m(/\bdkim=(pass|fail|none|neutral|temperror|permerror)\b/i)?.toLowerCase();
+  t.dkim = m(/\bdkim=(pass|fail|policy|none|neutral|temperror|permerror)\b/i)?.toLowerCase();
   t.dkimDomain = m(/header\.d=([^\s;,]+)/i);
   t.dkimSelector = m(/header\.s=([^\s;,]+)/i);
 
   t.dmarc = m(/\bdmarc=(pass|fail|none|temperror|permerror)\b/i)?.toLowerCase();
-  t.dmarcAction = m(/dmarc=\S+\s+action=(\S+)/i);
+  t.dmarcAction = m(/dmarc=\S+\s+action=([^\s;]+)/i);
   t.dmarcFrom = m(/header\.from=([^\s;,]+)/i);
 
   t.compauth = m(/\bcompauth=(pass|fail|softpass|none)\b/i)?.toLowerCase();

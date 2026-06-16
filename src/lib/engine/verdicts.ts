@@ -13,6 +13,7 @@ interface VerdictInput {
   compauthReason?: string;
   arc?: string;
   oda?: string;
+  ltdi?: string;
   scl?: string;
   sfv?: string;
   cat?: string;
@@ -36,7 +37,11 @@ export function deriveAuthVerdict(i: VerdictInput): Verdict {
     const r = i.compauthReason ? ` reason=${i.compauthReason}` : '';
     evidence.push(`compauth=${i.compauth}${r}`);
   }
-  if (i.arc && i.arc !== 'none') evidence.push(`ARC chain: arc=${i.arc}${i.oda ? ` oda=${i.oda}` : ''}${i.oda ? ` ltdi=${i.oda}` : ''}`);
+  if (i.arc && i.arc !== 'none') {
+    evidence.push(
+      `ARC chain: arc=${i.arc}${i.oda ? ` oda=${i.oda}` : ''}${i.ltdi ? ` ltdi=${i.ltdi}` : ''}`
+    );
+  }
 
   const failed = [i.spf, i.dkim, i.dmarc].filter(r => r && !['pass', 'none'].includes(r));
   if (failed.length > 0 || i.compauth === 'fail') {
@@ -55,12 +60,18 @@ export function deriveDispositionVerdict(i: VerdictInput): Verdict {
   let status: Verdict['status'] = 'pass';
   let state = 'Not spam';
 
-  const scl = parseInt(i.scl ?? '-1');
-  if (!isNaN(scl)) evidence.push(`SCL:${scl}${scl >= 5 ? ' (spam threshold exceeded)' : scl >= 1 ? ' (low spam probability)' : ''}`);
+  // Only emit SCL evidence when the field was actually present in the header
+  if (i.scl !== undefined) {
+    const scl = parseInt(i.scl);
+    if (!isNaN(scl)) {
+      evidence.push(`SCL:${scl}${scl >= 5 ? ' (spam threshold exceeded)' : scl >= 1 ? ' (low spam probability)' : ''}`);
+    }
+  }
   if (i.sfv) evidence.push(`SFV:${i.sfv}`);
   if (i.cat && i.cat !== 'NONE') evidence.push(`CAT:${i.cat}`);
   if (i.bcl) evidence.push(`BCL:${i.bcl}`);
 
+  const scl = parseInt(i.scl ?? '-1');
   if (i.cat && ['PHSH', 'MALW', 'SPOOF', 'UIMP', 'DIMP', 'GIMP', 'BIMP'].includes(i.cat)) {
     status = 'fail';
     state = `Threat detected (CAT:${i.cat})`;

@@ -109,9 +109,9 @@ export function classifyHops(received: ReceivedHop[]): Hop[] {
     else if (IS_EOP_OUTBOUND.test(byLow)) {
       role = 'sender-egress';
     }
-    // EOP outbound on the `from` side, EOP frontier on `by` = sender-side EOP → recipient EOP
+    // EOP outbound on the `from` side, EOP frontier on `by` = sender EOP → recipient inbound gateway
     else if (IS_EOP_OUTBOUND.test(fromLow) && IS_EOP_FRONTIER.test(byLow)) {
-      role = 'sender-egress';
+      role = 'recipient-ingress';
     }
     // External (non-Microsoft) sender hitting EOP frontier = first-contact inbound
     else if (!IS_MICROSOFT.test(fromLow) && IS_EOP_FRONTIER.test(byLow)) {

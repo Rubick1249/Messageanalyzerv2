@@ -27,9 +27,12 @@ export async function resolveSpfCidr(
   if (!record) return undefined;
 
   // Direct ip4:/ip6: mechanisms — no DNS lookup needed
-  for (const m of record.matchAll(/(?:ip4|ip6):([^\s]+)/gi)) {
-    if (ipInCidr(connectingIp, m[1])) {
-      return { cidr: m[1], match: true, lookupCount: _counter.n, resolvedVia: domain };
+  // Capture qualifier: + (pass), - (fail), ~ (softfail), ? (neutral). Default is +.
+  for (const m of record.matchAll(/([+\-~?]?)(?:ip4|ip6):([^\s]+)/gi)) {
+    const qualifier = m[1] || '+';
+    if (qualifier === '-' || qualifier === '~' || qualifier === '?') continue;
+    if (ipInCidr(connectingIp, m[2])) {
+      return { cidr: m[2], match: true, lookupCount: _counter.n, resolvedVia: domain };
     }
   }
 

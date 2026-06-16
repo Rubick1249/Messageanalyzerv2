@@ -38,14 +38,17 @@ export function useIntersection(
   options?: IntersectionObserverInit
 ): boolean {
   const [intersecting, setIntersecting] = useState(false);
+  // Capture options in a ref so callers can pass inline objects without triggering
+  // the effect on every render (IntersectionObserver options cannot be changed after creation).
+  const optionsRef = useRef(options);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(([entry]) => {
       setIntersecting(entry.isIntersecting);
-    }, options);
+    }, optionsRef.current);
     obs.observe(el);
     return () => obs.disconnect();
-  }, [ref, options]);
+  }, [ref]);
   return intersecting;
 }

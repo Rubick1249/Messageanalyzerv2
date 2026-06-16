@@ -90,7 +90,9 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
   const dkimSigRaw = getFirst(fields, 'dkim-signature') ?? '';
   const dkimSelectorMatch = /\bs=([^\s;]+)/i.exec(dkimSigRaw);
   const dkimDomainMatch   = /\bd=([^\s;]+)/i.exec(dkimSigRaw);
-  const dkimSelector = dkimSelectorMatch?.[1] ?? primaryAr.dkimSelector ?? 'selector1';
+  // Do not fall back to 'selector1' — performing a DNS lookup for an unknown selector
+  // produces a misleading "not found" result when the real selector is different.
+  const dkimSelector = dkimSelectorMatch?.[1] ?? primaryAr.dkimSelector;
   const dkimDomain   = dkimDomainMatch?.[1]   ?? primaryAr.dkimDomain ?? '';
 
   // ── MSIP ──────────────────────────────────────────────────────────────────
@@ -123,30 +125,41 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
   const connectingIp = primaryAr.spfIp ?? ff.CIP ?? '';
   const spfDomain = primaryAr.spfMailFrom?.split('@').pop() ?? fromDomain;
 
-  try {
-    // Run SPF record fetch, DKIM selector check, and DMARC lookup in parallel.
-    // SPF CIDR test runs separately after because it needs the record first.
-    [spfRecord, dkimSelectorRecord, dmarcLookup] = await Promise.all([
-      fetchSpfRecord(spfDomain),
-      dkimDomain ? queryDkimSelector(dkimSelector, dkimDomain) : Promise.resolve(undefined),
-      resolveDmarc(fromDomain || spfDomain),
-    ]);
-
-    // Recursive SPF CIDR membership test — follows include: chains per RFC 7208
-    if (connectingIp && spfDomain) {
-      const spfResult = await resolveSpfCidr(connectingIp, spfDomain);
-      if (spfResult?.match) {
-        const label = spfResult.resolvedVia !== spfDomain
-          ? `${spfResult.cidr} (via ${spfResult.resolvedVia})`
-          : spfResult.cidr;
-        cidrMatch = { ip: connectingIp, cidr: label, match: true, lookupCount: spfResult.lookupCount };
-      } else if (connectingIp && primaryAr.spf === 'pass') {
-        // Header stamped pass but we couldn't trace the CIDR (e.g. PTR or exists mechanism)
-        cidrMatch = { ip: connectingIp, cidr: `(mechanism resolved by ${spfDomain} SPF record)`, match: true, lookupCount: 1 };
-      }
-    }
-  } catch {
+  // Skip DNS entirely when we have no domain to query — avoids sending empty-string lookups.
+  if (!spfDomain && !fromDomain) {
     dnsAvailable = false;
+  } else {
+    // Race all DNS work against a 15 s overall wall-clock timeout.
+    const dnsWork = (async () => {
+      [spfRecord, dkimSelectorRecord, dmarcLookup] = await Promise.all([
+        fetchSpfRecord(spfDomain),
+        (dkimDomain && dkimSelector) ? queryDkimSelector(dkimSelector, dkimDomain) : Promise.resolve(undefined),
+        resolveDmarc(fromDomain || spfDomain),
+      ]);
+
+      // Recursive SPF CIDR membership test — follows include: chains per RFC 7208
+      if (connectingIp && spfDomain) {
+        const spfResult = await resolveSpfCidr(connectingIp, spfDomain);
+        if (spfResult?.match) {
+          const label = spfResult.resolvedVia !== spfDomain
+            ? `${spfResult.cidr} (via ${spfResult.resolvedVia})`
+            : spfResult.cidr;
+          cidrMatch = { ip: connectingIp, cidr: label, match: true, lookupCount: spfResult.lookupCount };
+        } else if (connectingIp && primaryAr.spf === 'pass') {
+          cidrMatch = { ip: connectingIp, cidr: `(mechanism resolved by ${spfDomain} SPF record)`, match: true, lookupCount: 1 };
+        }
+      }
+    })();
+
+    const dnsTimeout = new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error('DNS_TIMEOUT')), 15_000)
+    );
+
+    try {
+      await Promise.race([dnsWork, dnsTimeout]);
+    } catch {
+      dnsAvailable = false;
+    }
   }
 
   // ── Auth stamps ───────────────────────────────────────────────────────────
@@ -194,7 +207,7 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
     dkim: primaryAr.dkim, dkimDomain,
     dmarc: primaryAr.dmarc, dmarcAction: primaryAr.dmarcAction,
     compauth: caResult, compauthReason: caReason,
-    arc: primaryAr.arc, oda: arcSets[0]?.oda,
+    arc: primaryAr.arc, oda: arcSets[arcSets.length - 1]?.oda, ltdi: arcSets[arcSets.length - 1]?.ltdi,
     scl: ff.SCL, sfv: ff.SFV, cat: ff.CAT, bcl,
     dest: mbd.dest, ofr: mbd.OFR, ucf: mbd.ucf, jmr: mbd.jmr, kl: mbd.kl,
   };
@@ -310,13 +323,18 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
             ? 'The receiving server verified the DKIM-Signature. Message body and signed headers were not altered in transit.'
             : `DKIM result: ${primaryAr.dkim ?? 'none'}.`,
           { docUrl: 'https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-dkim-configure', status: dkimStatus }),
-        selector: field('DKIM selector', dkimSelector, dkimSelector, 'A',
-          `The DKIM selector identifies which public key to retrieve from DNS (${dkimSelector}._domainkey.${dkimDomain}).`,
-          { status: 'info' }),
+        selector: field('DKIM selector', dkimSelector ?? '(unknown)', dkimSelector ?? null, 'A',
+          dkimSelector
+            ? `The DKIM selector identifies which public key to retrieve from DNS (${dkimSelector}._domainkey.${dkimDomain}).`
+            : 'No DKIM selector found in DKIM-Signature header or Authentication-Results. DNS lookup skipped.',
+          { status: dkimSelector ? 'info' : 'unavailable' }),
         domain: field('DKIM signing domain (d=)', dkimDomain, dkimDomain || null, 'A',
           'The domain that signed this message. For DMARC alignment, this must match or be a subdomain of the RFC 5322 From domain.',
           { status: dkimDomain === fromDomain ? 'pass' : 'warn' }),
-        selectorDnsState: dnsAvailable
+        selectorDnsState: !dkimSelector
+          ? field('Selector DNS state (live)', '(selector unknown)', null, 'B',
+            'Cannot query DKIM selector record — no selector was present in DKIM-Signature or Authentication-Results.', { status: 'unavailable' })
+          : dnsAvailable
           ? field('Selector DNS state (live)',
             `${dkimSelector}._domainkey.${dkimDomain} → ${dkimSelectorRecord ? 'TXT record exists, public key valid' : 'not found'}`,
             dkimSelectorRecord ? 'exists, valid (live DNS)' : null,
@@ -346,7 +364,7 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
         inherited: dmarcLookup?.inherited ?? false,
         alignment: field('Identifier alignment',
           `dkim:${primaryAr.dkimDomain ?? dkimDomain} / spf:${envelopeFrom.split('@')[1] ?? '?'} vs From:${fromDomain}`,
-          { spf: envelopeFrom.split('@')[1]?.toLowerCase() === fromDomain, dkim: (primaryAr.dkimDomain ?? dkimDomain) === fromDomain, mode: 'relaxed' },
+          { spf: relaxedDomainMatch(envelopeFrom.split('@')[1]?.toLowerCase() ?? '', fromDomain), dkim: relaxedDomainMatch((primaryAr.dkimDomain ?? dkimDomain).toLowerCase(), fromDomain), mode: 'relaxed' },
           'A', 'Alignment check between SPF/DKIM domains and the RFC 5322 From domain.',
           { docUrl: 'https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-dmarc-configure', status: primaryAr.dmarc === 'pass' ? 'pass' : 'warn' }),
       },
@@ -412,6 +430,13 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
       { hasAttach: hasAttach === 'yes', contentType: contentType.split(';')[0].trim() }, 'A',
       hasAttach === 'yes' ? 'Attachments present (X-MS-Has-Attach: yes).' : 'No MIME attachments.', { status: 'neutral' }),
   };
+}
+
+// ── Relaxed DMARC identifier alignment (RFC 7489 §3.1) ────────────────────
+// Org-domain without PSL: a matches b if equal or one is a subdomain of the other.
+function relaxedDomainMatch(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  return a === b || a.endsWith('.' + b) || b.endsWith('.' + a);
 }
 
 // ── Helper: parse address list ─────────────────────────────────────────────

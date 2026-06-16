@@ -77,22 +77,23 @@ export function ResultsView({ result, onBack }: Props) {
             onClick={onBack}
             className="text-sm text-text-secondary hover:text-accent-azure transition-colors flex items-center gap-1.5"
           >
-            ← New analysis
+            <span aria-hidden="true">←</span> New analysis
           </button>
-          <span className="text-surface-border">|</span>
-          <span className="text-sm font-semibold text-text-primary truncate">
+          <span className="text-surface-border" aria-hidden="true">|</span>
+          <h1 className="text-sm font-semibold text-text-primary truncate">
             {result.meta.subject.value ?? result.meta.subject.raw}
-          </span>
+          </h1>
         </div>
 
         {/* Mobile section tabs */}
-        <div className="lg:hidden border-t border-surface-border overflow-x-auto">
+        <nav aria-label="Jump to section" className="lg:hidden border-t border-surface-border overflow-x-auto">
           <div className="flex gap-0 px-2 py-1">
             {SECTIONS.map(({ id, label }) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => scrollTo(id)}
+                aria-current={activeSection === id ? 'true' : undefined}
                 className={`shrink-0 px-3 py-1 text-xs rounded transition-colors ${
                   activeSection === id
                     ? 'text-accent-azure bg-accent-azure/10'
@@ -103,7 +104,7 @@ export function ResultsView({ result, onBack }: Props) {
               </button>
             ))}
           </div>
-        </div>
+        </nav>
       </header>
 
       <div className="flex flex-1 max-w-7xl mx-auto w-full px-4">
@@ -115,6 +116,7 @@ export function ResultsView({ result, onBack }: Props) {
                 key={id}
                 type="button"
                 onClick={() => scrollTo(id)}
+                aria-current={activeSection === id ? 'true' : undefined}
                 className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors ${
                   activeSection === id
                     ? 'bg-accent-azure/15 text-accent-azure font-medium'
@@ -132,7 +134,7 @@ export function ResultsView({ result, onBack }: Props) {
           {/* Section 1 — Summary (not collapsible, always shown) */}
           <div id="summary" style={sectionAnimation(0)} className="rounded-xl border border-surface-border bg-surface-card p-4 scroll-mt-20">
             <h2 className="text-sm font-semibold text-text-primary mb-4 flex items-center gap-2">
-              <span>✦</span> Analysis Summary
+              <span aria-hidden="true">✦</span> Analysis Summary
             </h2>
             <SummarySection result={result} />
           </div>

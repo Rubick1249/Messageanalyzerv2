@@ -13,15 +13,18 @@ export interface MailboxDeliveryTokens {
   ENG?: string;
 }
 
+const MBD_KEYS = new Set<string>(['ucf', 'jmr', 'auth', 'dest', 'wl', 'pcwl', 'kl', 'OFR', 'ENG']);
+
 export function parseMailboxDelivery(value: string): MailboxDeliveryTokens {
   const tokens: MailboxDeliveryTokens = {};
   for (const part of value.split(';')) {
     const colon = part.indexOf(':');
     if (colon < 1) continue;
-    const key = part.slice(0, colon).trim() as keyof MailboxDeliveryTokens;
+    const key = part.slice(0, colon).trim();
     const val = part.slice(colon + 1).trim();
-    // @ts-expect-error dynamic key
-    tokens[key] = val;
+    if (MBD_KEYS.has(key)) {
+      tokens[key as keyof MailboxDeliveryTokens] = val;
+    }
   }
   return tokens;
 }

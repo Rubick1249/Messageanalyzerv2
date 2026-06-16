@@ -26,10 +26,11 @@ export function VerdictPill({ status, label, size = 'md' }: Props) {
   return (
     <span
       className={`inline-flex items-center rounded-full border font-medium ${sizeClass} ${cfg.bg} ${cfg.color}`}
-      role="status"
+      role="img"
+      aria-label={`${status}: ${label}`}
     >
       <span aria-hidden="true" className="leading-none">{cfg.icon}</span>
-      <span>{label}</span>
+      <span aria-hidden="true">{label}</span>
     </span>
   );
 }

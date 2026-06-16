@@ -33,7 +33,6 @@ export function TierBadge({ tier, docUrl }: Props) {
   const badge = (
     <span
       className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-mono font-medium leading-none ${cfg.className}`}
-      title={cfg.title}
     >
       {cfg.label}
     </span>
@@ -46,7 +45,7 @@ export function TierBadge({ tier, docUrl }: Props) {
         target="_blank"
         rel="noopener noreferrer"
         className="hover:opacity-80 transition-opacity"
-        title={`Open documentation: ${cfg.title}`}
+        aria-label={cfg.title}
       >
         {badge}
       </a>

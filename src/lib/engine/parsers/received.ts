@@ -13,12 +13,16 @@ export interface ReceivedHop {
 export function parseReceived(value: string): ReceivedHop {
   const fromMatch = /\bfrom\s+(\S+)(?:\s+\(([^)]+)\))?/i.exec(value);
   const byMatch = /\bby\s+(\S+)/i.exec(value);
-  const withMatch = /\bwith\s+((?:Microsoft SMTP Server|HTTPS|SMTP)[^;(]*)/i.exec(value);
+  // Broadened to match ESMTP, ESMTPS, ESMTPA, LMTP, and other common protocols
+  const withMatch = /\bwith\s+((?:Microsoft SMTP Server|HTTPS|ESMTPS?A?|LMTP|SMTP)[^;(]*)/i.exec(value);
   const tlsMatch = /version=(TLS\S+),\s*cipher=(\S+)/i.exec(value);
-  const dateMatch = /;\s*([A-Za-z].+)$/.exec(value);
+  // Accept dates with or without the optional day-name prefix (RFC 5322 §3.3)
+  const dateMatch = /;\s*(.+)$/.exec(value);
 
   const fromHost = fromMatch?.[1] ?? '(unknown)';
-  const fromIp = fromMatch?.[2]?.match(/[\da-f:./]+/i)?.[0];
+  // RFC 5321 §4.4: IPv6 addresses are tagged as "IPv6:addr" — strip the tag before extracting
+  const fromIpRaw = fromMatch?.[2]?.replace(/^IPv6:/i, '') ?? '';
+  const fromIp = fromIpRaw.match(/[\da-f:./]+/i)?.[0];
   const by = byMatch?.[1] ?? '(unknown)';
   let proto = withMatch?.[1]?.trim() ?? '(unknown)';
   proto = proto.replace(/\s+id\s+\S+.*$/i, '').trim();

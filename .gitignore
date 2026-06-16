@@ -13,12 +13,16 @@
 # testing
 /coverage
 
-# next.js
+# next.js (stale — project uses Astro)
 /.next/
 /out/
 
 # production
 /build
+
+# Astro
+/dist/
+/.astro/
 
 # misc
 .DS_Store

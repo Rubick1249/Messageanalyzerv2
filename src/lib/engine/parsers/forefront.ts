@@ -18,16 +18,19 @@ export interface ForerontTokens {
   SFS?: string;
 }
 
+const FOREFRONT_KEYS = new Set<string>([
+  'CIP', 'CTRY', 'LANG', 'SCL', 'SFV', 'CAT', 'DIR', 'IPV', 'H', 'PTR', 'SFTY', 'BCL', 'SRV', 'SFS',
+]);
+
 export function parseForefront(value: string): ForerontTokens {
   const tokens: ForerontTokens = {};
   for (const part of value.split(';')) {
     const colon = part.indexOf(':');
     if (colon < 1) continue;
-    const key = part.slice(0, colon).trim() as keyof ForerontTokens;
+    const key = part.slice(0, colon).trim();
     const val = part.slice(colon + 1).trim();
-    if (key in ({} as ForerontTokens) || Object.keys(tokens).length < 20) {
-      // @ts-expect-error dynamic key assignment
-      tokens[key] = val;
+    if (FOREFRONT_KEYS.has(key)) {
+      tokens[key as keyof ForerontTokens] = val;
     }
   }
   return tokens;

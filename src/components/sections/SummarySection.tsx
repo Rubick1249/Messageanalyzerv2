@@ -15,7 +15,7 @@ function VerdictCard({ title, verdict }: { title: string; verdict: { state: stri
       <ul className="mt-1 space-y-0.5">
         {verdict.evidence.map((e, i) => (
           <li key={i} className="text-xs text-text-tertiary flex items-start gap-1.5">
-            <span className="text-text-tertiary mt-0.5">·</span>
+            <span className="text-text-tertiary mt-0.5" aria-hidden="true">·</span>
             <span>{e}</span>
           </li>
         ))}
@@ -55,25 +55,25 @@ export function SummarySection({ result }: Props) {
         </p>
       </div>
 
-      {/* Message metadata */}
+      {/* Message metadata — use dl/dt/dd for proper label-value semantics */}
       <div className="rounded-xl border border-surface-border bg-surface-raised p-4 space-y-3">
-        <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <span className="text-text-secondary font-medium">Subject</span>
-          <span className="text-text-primary break-words">{result.meta.subject.raw}</span>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+          <dt className="text-text-secondary font-medium">Subject</dt>
+          <dd className="text-text-primary break-words">{result.meta.subject.raw}</dd>
 
-          <span className="text-text-secondary font-medium">From</span>
-          <div className="flex items-center gap-2 flex-wrap">
+          <dt className="text-text-secondary font-medium">From</dt>
+          <dd className="flex items-center gap-2 flex-wrap">
             <span className="font-mono text-text-primary text-sm break-all">{result.meta.fromHeader.raw}</span>
-          </div>
+          </dd>
 
-          <span className="text-text-secondary font-medium">Envelope From</span>
-          <span className="font-mono text-text-primary text-sm break-all">{result.meta.envelopeFrom.raw}</span>
+          <dt className="text-text-secondary font-medium">Envelope From</dt>
+          <dd className="font-mono text-text-primary text-sm break-all">{result.meta.envelopeFrom.raw}</dd>
 
-          <span className="text-text-secondary font-medium">Date</span>
-          <span className="text-text-primary">{result.meta.creationTime.raw}</span>
+          <dt className="text-text-secondary font-medium">Date</dt>
+          <dd className="text-text-primary">{result.meta.creationTime.raw}</dd>
 
-          <span className="text-text-secondary font-medium">Latency</span>
-          <span className="flex items-center gap-2">
+          <dt className="text-text-secondary font-medium">Latency</dt>
+          <dd className="flex items-center gap-2">
             <span className={`font-mono font-semibold text-lg ${
               (result.meta.endToEndLatencySeconds.value ?? 0) > 60
                 ? 'text-verdict-warn'
@@ -82,8 +82,8 @@ export function SummarySection({ result }: Props) {
               {latency}s
             </span>
             <span className="text-xs text-text-tertiary">{result.meta.endToEndLatencySeconds.raw}</span>
-          </span>
-        </div>
+          </dd>
+        </dl>
       </div>
     </div>
   );

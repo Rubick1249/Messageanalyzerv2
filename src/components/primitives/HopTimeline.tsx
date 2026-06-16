@@ -31,16 +31,16 @@ export function HopTimeline({ hops }: Props) {
   const reduced = useReducedMotion();
 
   return (
-    <div className="space-y-0 relative">
+    <ol className="space-y-0 relative" aria-label="Delivery path hops">
       {hops.map((hop, i) => {
         const role = ROLE_CONFIG[hop.role];
         const isLast = i === hops.length - 1;
 
         return (
-          <div key={i} className="flex gap-3">
+          <li key={hop.index} className="flex gap-3">
             {/* Left column: dot + connector */}
             <div className="flex flex-col items-center">
-              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold flex-shrink-0 ${role.bg} ${role.color}`}>
+              <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold flex-shrink-0 ${role.bg} ${role.color}`} aria-hidden="true">
                 {hop.index + 1}
               </div>
               {!isLast && (
@@ -49,6 +49,7 @@ export function HopTimeline({ hops }: Props) {
                     reduced ? '' : 'animate-[scaleYIn_0.3s_ease-out_forwards]'
                   }`}
                   style={reduced ? {} : { animationDelay: `${i * 80}ms` }}
+                  aria-hidden="true"
                 />
               )}
             </div>
@@ -87,9 +88,9 @@ export function HopTimeline({ hops }: Props) {
                 <p className="text-xs text-text-tertiary">{hop.owner}</p>
               </div>
             </div>
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }

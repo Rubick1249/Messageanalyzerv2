@@ -8,6 +8,7 @@ export interface ThreadIndexDecoded {
 
 export function decodeThreadIndex(base64: string): ThreadIndexDecoded | undefined {
   try {
+    if (base64.length > 2048) return undefined; // guard against oversized user input before atob
     const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
     if (bytes.length < 22) return undefined;
 

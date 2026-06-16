@@ -12,7 +12,7 @@ function ipv4ToInt(ip: string): number {
 
 function ipv4InCidr(ip: string, cidr: string): boolean {
   const [base, lenStr] = cidr.split('/');
-  const prefixLen = parseInt(lenStr, 10);
+  const prefixLen = lenStr !== undefined ? parseInt(lenStr, 10) : 32; // RFC 7208: bare host = /32
   if (isNaN(prefixLen) || prefixLen < 0 || prefixLen > 32) return false;
   const mask = prefixLen === 0 ? 0 : (~0 << (32 - prefixLen)) >>> 0;
   return (ipv4ToInt(ip) & mask) === (ipv4ToInt(base) & mask);
@@ -33,7 +33,7 @@ function ipv6Expand(ip: string): bigint {
 
 function ipv6InCidr(ip: string, cidr: string): boolean {
   const [base, lenStr] = cidr.split('/');
-  const prefixLen = BigInt(parseInt(lenStr, 10));
+  const prefixLen = BigInt(lenStr !== undefined ? parseInt(lenStr, 10) : 128); // RFC 7208: bare host = /128
   if (prefixLen < 0n || prefixLen > 128n) return false;
   const mask = prefixLen === 0n ? 0n : (~0n << (128n - prefixLen)) & ((1n << 128n) - 1n);
   try {

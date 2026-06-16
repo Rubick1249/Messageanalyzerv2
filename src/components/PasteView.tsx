@@ -1,28 +1,38 @@
 import { useState, useRef } from 'react';
 
 interface Props {
+  text: string;
+  onTextChange: (text: string) => void;
   onAnalyzeText: (text: string) => void;
   analyzing: boolean;
   error: string | null;
 }
 
-export function PasteView({ onAnalyzeText, analyzing, error }: Props) {
-  const [text, setText] = useState('');
+export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error }: Props) {
   const [dragging, setDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const loadFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = ev => onTextChange(String(ev.target?.result ?? ''));
+    reader.readAsText(file);
+  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const file = e.dataTransfer.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setText(String(ev.target?.result ?? ''));
-    reader.readAsText(file);
+    if (file) loadFile(file);
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) loadFile(file);
+    e.target.value = '';
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
       {/* Header */}
       <div className="mb-10 text-center max-w-2xl">
         <div className="inline-flex items-center gap-2 mb-4 px-3 py-1 rounded-full border border-accent-azure/30 bg-accent-azure/5 text-xs text-accent-azure font-medium">
@@ -48,10 +58,12 @@ export function PasteView({ onAnalyzeText, analyzing, error }: Props) {
           onDragLeave={() => setDragging(false)}
           onDrop={handleDrop}
         >
+          <label htmlFor="header-input" className="sr-only">Raw email headers</label>
           <textarea
+            id="header-input"
             ref={textareaRef}
             value={text}
-            onChange={e => setText(e.target.value)}
+            onChange={e => onTextChange(e.target.value)}
             placeholder={[
               'Paste raw email headers here…',
               '',
@@ -61,7 +73,6 @@ export function PasteView({ onAnalyzeText, analyzing, error }: Props) {
             ].join('\n')}
             className="w-full bg-transparent resize-none text-sm font-mono text-text-primary placeholder:text-text-tertiary p-4 outline-none min-h-[280px] leading-relaxed"
             spellCheck={false}
-            aria-label="Raw email headers input"
             disabled={analyzing}
           />
           {dragging && (
@@ -73,7 +84,10 @@ export function PasteView({ onAnalyzeText, analyzing, error }: Props) {
 
         {/* Error */}
         {error && (
-          <div className="rounded-lg border border-verdict-fail/30 bg-verdict-fail/5 px-4 py-3 text-sm text-verdict-fail">
+          <div
+            role="alert"
+            className="rounded-lg border border-verdict-fail/30 bg-verdict-fail/5 px-4 py-3 text-sm text-verdict-fail"
+          >
             {error}
           </div>
         )}
@@ -91,13 +105,30 @@ export function PasteView({ onAnalyzeText, analyzing, error }: Props) {
                 <span className="inline-block w-3.5 h-3.5 border-2 border-surface-base/40 border-t-surface-base rounded-full animate-spin" aria-hidden="true" />
                 Analyzing…
               </>
-            ) : 'Analyze →'}
+            ) : (
+              <>Analyze <span aria-hidden="true">→</span></>
+            )}
           </button>
+
+          {/* Keyboard-accessible file picker (alternative to drag-and-drop) */}
+          <input
+            type="file"
+            id="file-load"
+            accept=".txt,.eml"
+            className="sr-only"
+            onChange={handleFileInput}
+          />
+          <label
+            htmlFor="file-load"
+            className="px-4 py-2 rounded-lg border border-surface-border text-sm text-text-secondary hover:border-accent-azure hover:text-accent-azure cursor-pointer transition-colors duration-150"
+          >
+            Load file
+          </label>
         </div>
 
         {/* Privacy notice */}
         <p className="text-xs text-text-tertiary text-center pt-1">
-          Your header text never leaves this browser. Only extracted domain names are sent to the DNS resolver during analysis. No telemetry.
+          Your header text never leaves this browser. Only the sender&apos;s domain names are sent to Cloudflare and Google DNS-over-HTTPS resolvers for SPF, DKIM, and DMARC lookups. No telemetry.
         </p>
       </div>
 
@@ -109,12 +140,12 @@ export function PasteView({ onAnalyzeText, analyzing, error }: Props) {
           { icon: '🔒', title: 'Client-side', body: 'Parsing runs in your browser. Headers stay on your machine.' },
         ].map(f => (
           <div key={f.title} className="rounded-xl border border-surface-border bg-surface-card p-4 space-y-1.5">
-            <div className="text-xl">{f.icon}</div>
+            <div className="text-xl" aria-hidden="true">{f.icon}</div>
             <p className="text-sm font-semibold text-text-primary">{f.title}</p>
             <p className="text-xs text-text-secondary leading-relaxed">{f.body}</p>
           </div>
         ))}
       </div>
-    </div>
+    </main>
   );
 }

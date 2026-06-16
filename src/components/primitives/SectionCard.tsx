@@ -25,7 +25,7 @@ export function SectionCard({
   return (
     <section
       id={id}
-      className="rounded-xl border border-surface-border bg-surface-card overflow-hidden scroll-mt-4"
+      className="rounded-xl border border-surface-border bg-surface-card overflow-hidden scroll-mt-20"
       style={{
         borderLeftColor: accentColor ?? undefined,
         borderLeftWidth: accentColor ? '3px' : undefined,
@@ -43,7 +43,8 @@ export function SectionCard({
           {icon && (
             <span className="text-text-tertiary text-sm" aria-hidden="true">{icon}</span>
           )}
-          <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
+          {/* span with role=heading avoids invalid <h2> inside <button> */}
+          <span role="heading" aria-level={2} className="text-sm font-semibold text-text-primary">{title}</span>
         </div>
         <span
           aria-hidden="true"
@@ -54,16 +55,16 @@ export function SectionCard({
         </span>
       </button>
 
-      {open && (
-        <div
-          id={regionId}
-          role="region"
-          aria-label={title}
-          className="px-4 pb-4 pt-1"
-        >
-          {children}
-        </div>
-      )}
+      {/* Panel stays in DOM so aria-controls always references an existing element. */}
+      <div
+        id={regionId}
+        role="region"
+        aria-label={title}
+        hidden={!open}
+        className="px-4 pb-4 pt-1"
+      >
+        {children}
+      </div>
     </section>
   );
 }

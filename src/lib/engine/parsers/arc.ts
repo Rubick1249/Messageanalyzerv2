@@ -27,9 +27,13 @@ export function parseArcSets(headers: ArcHeaders): ArcSetParsed[] {
     if (!iMatch) continue;
     const instance = parseInt(iMatch[1], 10);
 
-    const cvFromSeal = headers.seals
+    const sealCv = headers.seals
       .map(s => { const m = /i=(\d+).*\bcv=(none|pass|fail)\b/i.exec(s); return m && parseInt(m[1]) === instance ? m[2] : null; })
-      .find(Boolean) ?? 'none';
+      .find(Boolean);
+
+    // Use 'missing-seal' sentinel when no ARC-Seal matches this instance — not 'none',
+    // which RFC 8617 reserves for a valid first-sealer with no prior chain.
+    const cvFromSeal = sealCv ?? 'missing-seal';
 
     const set: ArcSetParsed = {
       instance,
@@ -44,16 +48,19 @@ export function parseArcSets(headers: ArcHeaders): ArcSetParsed[] {
     sets.push(set);
   }
 
-  // Parse oda / ltdi from X-MS-Exchange-Organization-ARC-Result
-  if (headers.msArcResult) {
+  sets.sort((a, b) => a.instance - b.instance);
+
+  // oda/ltdi from X-MS-Exchange-Organization-ARC-Result reflect the overall chain evaluation
+  // result — apply only to the highest-instance (most recent) set.
+  if (headers.msArcResult && sets.length > 0) {
     const oda = /oda=(\d+)/i.exec(headers.msArcResult)?.[1];
     const ltdi = /ltdi=(\d+)/i.exec(headers.msArcResult)?.[1];
-    for (const set of sets) {
-      if (oda !== undefined) set.oda = oda;
-      if (ltdi !== undefined) set.ltdi = ltdi;
+    const maxSet = sets[sets.length - 1];
+    if (maxSet) {
+      if (oda !== undefined) maxSet.oda = oda;
+      if (ltdi !== undefined) maxSet.ltdi = ltdi;
     }
   }
 
-  sets.sort((a, b) => a.instance - b.instance);
   return sets;
 }

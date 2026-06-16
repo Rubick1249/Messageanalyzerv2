@@ -12,6 +12,12 @@ import '../styles/tokens.css';
     <title>HeaderLens — M365 Email Header Analyzer</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
+    <!-- Content Security Policy
+         frame-ancestors must be set as an HTTP header (not meta) to block clickjacking.
+         Set X-Frame-Options: DENY and Content-Security-Policy: frame-ancestors 'none'
+         at the hosting/CDN layer when deploying publicly. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; connect-src https://cloudflare-dns.com https://dns.google; img-src 'self' data:; base-uri 'self'; form-action 'none'; object-src 'none';" />
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
