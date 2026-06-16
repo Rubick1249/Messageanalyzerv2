@@ -7,13 +7,15 @@ interface Props {
 
 export function DeliveryPathSection({ result }: Props) {
   const totalDelay = result.deliveryPath.reduce((sum, h) => sum + h.delaySeconds, 0);
+  const hasTimings = result.deliveryPath.some(h => h.delaySeconds > 0);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4 text-sm text-text-secondary">
         <span><strong className="text-text-primary">{result.deliveryPath.length}</strong> hops</span>
         <span>·</span>
-        <span>Total transit: <strong className="text-text-primary">{totalDelay}s</strong></span>
+        <span>Total transit: <strong className="text-text-primary">{hasTimings ? `${totalDelay}s` : '—'}</strong></span>
+        {!hasTimings && <span className="text-xs text-text-tertiary">(timestamps absent from headers)</span>}
       </div>
 
       <div className="bg-surface-base rounded-lg p-4">

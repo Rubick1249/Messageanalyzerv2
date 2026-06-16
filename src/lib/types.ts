@@ -102,6 +102,7 @@ export interface AnalysisResult {
     fromHeader: Field<string>;
     envelopeFrom: Field<string>;
     replyTo?: Field<string>;
+    resentFrom?: Field<string>;
     to: Field<string>[];
     cc: Field<string>[];
     creationTime: Field<string>;

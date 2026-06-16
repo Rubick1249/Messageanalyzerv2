@@ -7,6 +7,14 @@ interface Props {
   result: AnalysisResult;
 }
 
+// Extract bare domain from an RFC 5322 address string like "Name <user@example.com>" or "user@example.com" or "example.com"
+function extractDomain(raw: string | null | undefined): string {
+  if (!raw) return 'domain';
+  const email = /<([^>]+)>/.exec(raw)?.[1] ?? raw;
+  const parts = email.split('@');
+  return parts.length > 1 ? parts[1] : parts[0];
+}
+
 export function AuthenticationSection({ result }: Props) {
   const { spf, dkim, dmarc, compauth } = result.authentication;
 
@@ -44,7 +52,7 @@ export function AuthenticationSection({ result }: Props) {
           <div className="mt-3">
             <DnsRecordCard
               type="TXT"
-              name={`${result.meta.envelopeFrom.value?.split('@')[1] ?? 'domain'} SPF`}
+              name={`${extractDomain(result.meta.envelopeFrom.value)} SPF`}
               value={spf.record.raw}
               status={spf.result.status ?? 'neutral'}
             />
@@ -79,13 +87,29 @@ export function AuthenticationSection({ result }: Props) {
               </p>
             </div>
           )}
-          <FieldRow field={dmarc.alignment} />
+          <FieldRow
+            field={dmarc.alignment}
+            valueDisplay={
+              dmarc.alignment.value ? (
+                <div className="text-right space-y-1">
+                  <div className="flex justify-end items-center gap-1.5">
+                    <span className="text-xs text-text-tertiary">DKIM</span>
+                    <VerdictPill status={dmarc.alignment.value.dkim ? 'pass' : 'fail'} label={dmarc.alignment.value.dkim ? 'aligned' : 'misaligned'} size="sm" />
+                  </div>
+                  <div className="flex justify-end items-center gap-1.5">
+                    <span className="text-xs text-text-tertiary">SPF</span>
+                    <VerdictPill status={dmarc.alignment.value.spf ? 'pass' : 'fail'} label={dmarc.alignment.value.spf ? 'aligned' : 'misaligned'} size="sm" />
+                  </div>
+                </div>
+              ) : null
+            }
+          />
         </div>
         {dmarc.policy.value && (
           <div className="mt-3">
             <DnsRecordCard
               type="TXT"
-              name={`_dmarc.${dmarc.orgDomain?.raw ?? result.meta.fromHeader.value?.split('@')[1] ?? 'domain'}`}
+              name={`_dmarc.${dmarc.orgDomain?.raw ?? extractDomain(result.meta.fromHeader.value)}`}
               value={dmarc.policy.raw}
               status={dmarc.result.status ?? 'neutral'}
               note={dmarc.inherited ? `Inherited from org domain (no record at the From subdomain)` : undefined}

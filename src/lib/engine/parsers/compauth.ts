@@ -7,6 +7,7 @@ const REASON_MAP: Record<string, string> = {
   '002': 'Organizational policy for the sender/domain combination is explicitly prohibited — an admin has set a block rule.',
   '010': 'Message failed DMARC with action=reject or action=quarantine, and the sending domain is one of your organization\'s accepted domains (self-to-self or intra-org spoofing).',
   '100': 'Message passed explicit authentication — the From domain\'s SPF and DKIM both passed and are aligned. This is the strongest compauth result.',
+  '130': 'Message passed composite authentication because it was forwarded via a trusted ARC chain. The original authentication was preserved by a trusted ARC sealer — this is the standard compauth pass reason for forwarded or resent messages where DMARC would otherwise fail due to envelope rewriting.',
   '200': 'Message passed implicit authentication. The sending domain did not have email authentication records, but Microsoft\'s backend signals (reputation, heuristics) indicate the sender is legitimate.',
   '250': 'Message passed because the sender matched an allow list or safe sender policy configured by an admin or end user.',
   '300': 'Message did not pass compauth. Sending domain has no authentication records and no overriding trust signals.',

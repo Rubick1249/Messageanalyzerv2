@@ -135,9 +135,9 @@ export function PasteView({ text, onTextChange, onAnalyzeText, analyzing, error 
       {/* Feature callouts */}
       <div className="mt-14 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl w-full">
         {[
-          { icon: '⚡', title: 'Deterministic', body: 'Same input → identical output, every time. No AI guesses.' },
-          { icon: '🔬', title: 'Sourced', body: 'Every field carries a Tier A–D trust badge with a doc link where available.' },
-          { icon: '🔒', title: 'Client-side', body: 'Parsing runs in your browser. Headers stay on your machine.' },
+          { icon: '🧮', title: 'SPF Breaks at 10', body: 'RFC 7208 section 4.6.4 caps SPF at exactly 10 DNS lookups. Hit 11 and the spec mandates a hard PermError — even if every lookup would have passed.' },
+          { icon: '🔃', title: 'Headers Run Backwards', body: 'Each hop prepends its Received header, so the raw stack is newest-first. The very bottom Received line is where the message was born.' },
+          { icon: '👻', title: 'Bcc Disappears at the MTA', body: "Bcc addresses are stripped by the sending MTA before delivery. Even if you're the Bcc recipient, your address never appears anywhere in the raw headers." },
         ].map(f => (
           <div key={f.title} className="rounded-xl border border-surface-border bg-surface-card p-4 space-y-1.5">
             <div className="text-xl" aria-hidden="true">{f.icon}</div>

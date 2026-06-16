@@ -7,6 +7,7 @@ export interface AuthTokens {
   dkim?: string;
   dkimDomain?: string;
   dkimSelector?: string;
+  dkimDetail?: string;
   dmarc?: string;
   dmarcAction?: string;
   dmarcFrom?: string;
@@ -25,6 +26,7 @@ export function parseAuthResults(value: string): AuthTokens {
   t.spfMailFrom = m(/smtp\.mailfrom=([^\s;,]+)/i);
 
   t.dkim = m(/\bdkim=(pass|fail|policy|none|neutral|temperror|permerror)\b/i)?.toLowerCase();
+  t.dkimDetail = m(/\bdkim=fail\s+\(([^)]+)\)/i);
   t.dkimDomain = m(/header\.d=([^\s;,]+)/i);
   t.dkimSelector = m(/header\.s=([^\s;,]+)/i);
 

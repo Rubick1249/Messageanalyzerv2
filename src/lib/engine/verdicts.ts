@@ -44,7 +44,19 @@ export function deriveAuthVerdict(i: VerdictInput): Verdict {
   }
 
   const failed = [i.spf, i.dkim, i.dmarc].filter(r => r && !['pass', 'none'].includes(r));
-  if (failed.length > 0 || i.compauth === 'fail') {
+
+  if (i.compauth === 'fail') {
+    status = 'fail';
+    state = 'Authentication failed';
+  } else if (i.compauth === 'pass' && failed.length > 0) {
+    // compauth=pass is EOP's final composite verdict. Individual check failures are expected
+    // for forwarded/resent messages where envelope rewriting breaks SPF/DKIM/DMARC alignment.
+    // Reason 130 specifically indicates ARC-chain override.
+    status = 'warn';
+    state = i.compauthReason === '130'
+      ? 'ARC-forwarded (compauth=pass)'
+      : 'Compauth pass (override)';
+  } else if (failed.length > 0) {
     status = 'fail';
     state = 'Authentication failed';
   } else if (i.compauth === 'softpass' || i.compauth === 'none') {

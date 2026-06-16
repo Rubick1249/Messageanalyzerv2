@@ -13,7 +13,7 @@ interface Props {
 export function FieldRow({ field, valueDisplay, mono = false }: Props) {
   const displayValue = valueDisplay ?? (
     field.value !== null
-      ? <span className={mono ? 'font-mono' : ''}>{String(field.value)}</span>
+      ? <span className={`break-all ${mono ? 'font-mono' : ''}`}>{String(field.value)}</span>
       : <span className="text-text-tertiary italic">—</span>
   );
 
@@ -33,14 +33,16 @@ export function FieldRow({ field, valueDisplay, mono = false }: Props) {
             note={field.note}
           />
         </div>
-        <div className="flex items-start gap-2 flex-wrap">
-          <code className="text-xs font-mono text-text-tertiary bg-surface-raised px-1.5 py-0.5 rounded border border-surface-border break-all">
-            {field.raw}
-          </code>
-          <CopyButton value={field.raw} label="raw" />
-        </div>
+        {field.raw && (
+          <div className="flex items-start gap-2 flex-wrap">
+            <code className="text-xs font-mono text-text-tertiary bg-surface-raised px-1.5 py-0.5 rounded border border-surface-border break-all">
+              {field.raw}
+            </code>
+            <CopyButton value={field.raw} label="raw" />
+          </div>
+        )}
       </div>
-      <div className="text-sm text-text-primary text-right max-w-[200px] break-words">
+      <div className="text-sm text-text-primary text-right max-w-[280px]">
         {displayValue}
       </div>
     </div>

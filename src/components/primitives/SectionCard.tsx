@@ -28,7 +28,7 @@ export function SectionCard({
       className="rounded-xl border border-surface-border bg-surface-card overflow-hidden scroll-mt-20"
       style={{
         borderLeftColor: accentColor ?? undefined,
-        borderLeftWidth: accentColor ? '3px' : undefined,
+        borderLeftWidth: accentColor ? '4px' : undefined,
         animationDelay: `${animationDelay}ms`,
       }}
     >
@@ -37,18 +37,18 @@ export function SectionCard({
         aria-expanded={open}
         aria-controls={regionId}
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-surface-raised transition-colors duration-150 text-left"
+        className="w-full flex items-center justify-between px-5 py-3.5 bg-surface-raised/40 hover:bg-surface-raised border-b border-surface-border/60 transition-colors duration-150 text-left"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {icon && (
-            <span className="text-text-tertiary text-sm" aria-hidden="true">{icon}</span>
+            <span className="text-base leading-none" aria-hidden="true">{icon}</span>
           )}
           {/* span with role=heading avoids invalid <h2> inside <button> */}
-          <span role="heading" aria-level={2} className="text-sm font-semibold text-text-primary">{title}</span>
+          <span role="heading" aria-level={2} className="text-sm font-semibold text-text-primary tracking-wide">{title}</span>
         </div>
         <span
           aria-hidden="true"
-          className="text-text-tertiary text-xs transition-transform duration-150"
+          className="text-text-tertiary text-xs transition-transform duration-200"
           style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
         >
           ▾
@@ -61,7 +61,7 @@ export function SectionCard({
         role="region"
         aria-label={title}
         hidden={!open}
-        className="px-4 pb-4 pt-1"
+        className="px-5 pb-5 pt-3"
       >
         {children}
       </div>

@@ -69,23 +69,31 @@ export function HopTimeline({ hops }: Props) {
               </div>
 
               <div className="space-y-1">
-                <div className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className="text-xs text-text-tertiary w-5 shrink-0">from</span>
-                  <code className="text-xs font-mono text-text-primary break-all">{hop.from}</code>
-                </div>
-                <div className="flex items-baseline gap-1.5 flex-wrap">
-                  <span className="text-xs text-text-tertiary w-5 shrink-0">by</span>
-                  <code className="text-xs font-mono text-text-secondary break-all">{hop.by}</code>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs text-text-tertiary">{hop.with}</span>
-                  {hop.tls && (
-                    <span className="text-xs font-mono text-verdict-pass bg-verdict-pass/10 px-1.5 py-0.5 rounded border border-verdict-pass/30">
-                      {hop.tls}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-text-tertiary">{hop.owner}</p>
+                {hop.from !== '(unknown)' && (
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <span className="text-xs text-text-tertiary w-8 shrink-0">from</span>
+                    <code className="text-xs font-mono text-text-primary break-all">{hop.from}</code>
+                  </div>
+                )}
+                {hop.by !== '(unknown)' && (
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <span className="text-xs text-text-tertiary w-8 shrink-0">by</span>
+                    <code className="text-xs font-mono text-text-secondary break-all">{hop.by}</code>
+                  </div>
+                )}
+                {hop.with !== '(unknown)' && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-text-tertiary">{hop.with}</span>
+                    {hop.tls && (
+                      <span className="text-xs font-mono text-verdict-pass bg-verdict-pass/10 px-1.5 py-0.5 rounded border border-verdict-pass/30">
+                        {hop.tls}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {hop.owner !== hop.by && (
+                  <p className="text-xs text-text-tertiary">{hop.owner}</p>
+                )}
               </div>
             </div>
           </li>

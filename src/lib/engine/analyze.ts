@@ -40,7 +40,8 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
   const mimeVer   = getFirst(fields, 'mime-version');
   const hasAttach = getFirst(fields, 'x-ms-has-attach') ?? '';
   const threadIdx = getFirst(fields, 'thread-index') ?? '';
-  const replyTo   = getFirst(fields, 'reply-to');
+  const replyTo    = getFirst(fields, 'reply-to');
+  const resentFrom = getFirst(fields, 'resent-from');
 
   // ── NMI ───────────────────────────────────────────────────────────────────
   const nmiRaw = getFirst(fields, 'x-ms-exchange-organization-network-message-id') ?? '';
@@ -84,7 +85,10 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
   const arcSets = parseArcSets({
     seals: arcSealValues, sigs: arcSigValues, authResults: arcArValues, msArcResult,
   });
-  const arcOverrode = arcSets.length > 0 && (msArcResult?.includes('oda=1') ?? false);
+  const arcOverrode = arcSets.length > 0 && (
+    (msArcResult?.includes('oda=1') ?? false) ||
+    arcSets[arcSets.length - 1]?.oda === '1'
+  );
 
   // ── DKIM-Signature ────────────────────────────────────────────────────────
   const dkimSigRaw = getFirst(fields, 'dkim-signature') ?? '';
@@ -110,6 +114,8 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
   const fromDomain = (/<([^>]+)>/.exec(fromRaw)?.[1] ?? fromRaw).split('@')[1]?.toLowerCase() ?? '';
   const envelopeFromMatch = /smtp\.mailfrom=([^\s;,]+)/i.exec(arValues[0] ?? msArValue);
   const envelopeFrom = envelopeFromMatch?.[1] ?? fromDomain;
+  // Bare-domain envelope-from (e.g. "ksecurity.cloud" with no @) is already the domain.
+  const envFromDomain = envelopeFrom.includes('@') ? envelopeFrom.split('@')[1] : envelopeFrom;
 
   const isExternal = fromEntity.toLowerCase() === 'internet'
     || authAs.toLowerCase() === 'anonymous'
@@ -273,6 +279,9 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
         'The SMTP MAIL FROM envelope address. Used for SPF checks and bounce routing. May differ from the From header.', { status: 'neutral' }),
       replyTo: replyTo ? field('Reply-To', replyTo, replyTo, 'A',
         'RFC 5322 Reply-To header. Replies will be directed here instead of the From address. A mismatch between Reply-To and From may indicate a phishing attempt.', { status: 'warn' }) : undefined,
+      resentFrom: resentFrom ? field('Resent-From', resentFrom, resentFrom, 'A',
+        'RFC 5322 Resent-From header. Identifies the mailbox that forwarded or resent this message. Its presence explains DMARC failures when the envelope sender changed during forwarding.',
+        { status: 'info' }) : undefined,
       to: parseAddressList(toRaw, 'To', 'Primary recipient(s).'),
       cc: ccRaw ? parseAddressList(ccRaw, 'Cc', 'Carbon copy recipient(s).') : [],
       creationTime: field('Date', dateRaw, sentDate ? toIso(sentDate) : null, 'A',
@@ -321,9 +330,11 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
         result: field('DKIM result', primaryAr.dkim ?? 'none', primaryAr.dkim ?? null, 'A',
           primaryAr.dkim === 'pass'
             ? 'The receiving server verified the DKIM-Signature. Message body and signed headers were not altered in transit.'
+            : primaryAr.dkim === 'fail' && primaryAr.dkimDetail
+            ? `DKIM verification failed: ${primaryAr.dkimDetail}.`
             : `DKIM result: ${primaryAr.dkim ?? 'none'}.`,
           { docUrl: 'https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-dkim-configure', status: dkimStatus }),
-        selector: field('DKIM selector', dkimSelector ?? '(unknown)', dkimSelector ?? null, 'A',
+        selector: field('DKIM selector', dkimSelector ?? '', dkimSelector ?? null, 'A',
           dkimSelector
             ? `The DKIM selector identifies which public key to retrieve from DNS (${dkimSelector}._domainkey.${dkimDomain}).`
             : 'No DKIM selector found in DKIM-Signature header or Authentication-Results. DNS lookup skipped.',
@@ -332,7 +343,7 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
           'The domain that signed this message. For DMARC alignment, this must match or be a subdomain of the RFC 5322 From domain.',
           { status: dkimDomain === fromDomain ? 'pass' : 'warn' }),
         selectorDnsState: !dkimSelector
-          ? field('Selector DNS state (live)', '(selector unknown)', null, 'B',
+          ? field('Selector DNS state (live)', '', null, 'B',
             'Cannot query DKIM selector record — no selector was present in DKIM-Signature or Authentication-Results.', { status: 'unavailable' })
           : dnsAvailable
           ? field('Selector DNS state (live)',
@@ -351,6 +362,8 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
           primaryAr.dmarc ?? null, 'A',
           primaryAr.dmarc === 'pass'
             ? 'DMARC passed — at least one identifier (SPF or DKIM) aligned with the RFC 5322 From domain.'
+            : primaryAr.dmarcAction === 'oreject'
+            ? 'DMARC failed with action=oreject (organizational reject). EOP rejected this message at the cross-tenant boundary because the sending domain has p=reject and neither SPF nor DKIM aligned with the From domain. If the message was delivered, a trusted ARC chain override allowed it through.'
             : `DMARC result: ${primaryAr.dmarc ?? 'none'}.`,
           { docUrl: 'https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-dmarc-configure', status: dmarcStatus }),
         policy: field('DMARC policy', dmarcLookup?.record ?? '(live DNS lookup)',
@@ -363,8 +376,8 @@ export async function analyze(rawHeaders: string): Promise<AnalysisResult> {
           { status: 'info' }) : undefined,
         inherited: dmarcLookup?.inherited ?? false,
         alignment: field('Identifier alignment',
-          `dkim:${primaryAr.dkimDomain ?? dkimDomain} / spf:${envelopeFrom.split('@')[1] ?? '?'} vs From:${fromDomain}`,
-          { spf: relaxedDomainMatch(envelopeFrom.split('@')[1]?.toLowerCase() ?? '', fromDomain), dkim: relaxedDomainMatch((primaryAr.dkimDomain ?? dkimDomain).toLowerCase(), fromDomain), mode: 'relaxed' },
+          `dkim:${primaryAr.dkimDomain ?? dkimDomain} / spf:${envFromDomain} vs From:${fromDomain}`,
+          { spf: relaxedDomainMatch(envFromDomain.toLowerCase(), fromDomain), dkim: relaxedDomainMatch((primaryAr.dkimDomain ?? dkimDomain).toLowerCase(), fromDomain), mode: 'relaxed' },
           'A', 'Alignment check between SPF/DKIM domains and the RFC 5322 From domain.',
           { docUrl: 'https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-dmarc-configure', status: primaryAr.dmarc === 'pass' ? 'pass' : 'warn' }),
       },
@@ -464,6 +477,9 @@ function buildForefrontFields(ff: ReturnType<typeof parseForefront>, _raw: strin
   }
   if (ff.SFV) fields.push(field('Spam Filter Verdict (SFV)', ff.SFV, ff.SFV, 'A',
     sfvMeaning(ff.SFV), { docUrl: docBase, status: ff.SFV === 'NSPM' ? 'pass' : ff.SFV === 'SPM' ? 'fail' : 'info' }));
+  if (ff.SFP) fields.push(field('Safe Filter Policy (SFP)', ff.SFP, ff.SFP, 'B',
+    `SFP:${ff.SFP} — encodes which filtering policies were applied or bypassed. Non-zero values indicate policy-based delivery decisions (safe sender list, tenant allow policy, etc.).`,
+    { docUrl: docBase, status: 'neutral' }));
   if (ff.CAT) {
     const ci = catInfo(ff.CAT);
     fields.push(field('Threat Category (CAT)', ff.CAT, ff.CAT, 'A',

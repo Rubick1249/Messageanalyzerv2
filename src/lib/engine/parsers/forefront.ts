@@ -7,6 +7,7 @@ export interface ForerontTokens {
   LANG?: string;
   SCL?: string;
   SFV?: string;
+  SFP?: string;
   CAT?: string;
   DIR?: string;
   IPV?: string;
@@ -19,7 +20,7 @@ export interface ForerontTokens {
 }
 
 const FOREFRONT_KEYS = new Set<string>([
-  'CIP', 'CTRY', 'LANG', 'SCL', 'SFV', 'CAT', 'DIR', 'IPV', 'H', 'PTR', 'SFTY', 'BCL', 'SRV', 'SFS',
+  'CIP', 'CTRY', 'LANG', 'SCL', 'SFV', 'SFP', 'CAT', 'DIR', 'IPV', 'H', 'PTR', 'SFTY', 'BCL', 'SRV', 'SFS',
 ]);
 
 export function parseForefront(value: string): ForerontTokens {

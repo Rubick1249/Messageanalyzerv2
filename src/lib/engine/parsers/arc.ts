@@ -45,6 +45,13 @@ export function parseArcSets(headers: ArcHeaders): ArcSetParsed[] {
     set.dkim = /\bdkim=(pass|fail|none)\b/i.exec(ar)?.[1]?.toLowerCase();
     set.dmarc = /\bdmarc=(pass|fail|none)\b/i.exec(ar)?.[1]?.toLowerCase();
 
+    // Some M365 deployments embed oda/ltdi inside the arc= parenthetical in
+    // ARC-Authentication-Results when X-MS-Exchange-Organization-ARC-Result is absent.
+    const arOda  = /\barc=[^\s;]+\s*\([^)]*\boda=(\d+)/i.exec(ar)?.[1];
+    const arLtdi = /\barc=[^\s;]+\s*\([^)]*\bltdi=(\d+)/i.exec(ar)?.[1];
+    if (arOda  !== undefined) set.oda  = arOda;
+    if (arLtdi !== undefined) set.ltdi = arLtdi;
+
     sets.push(set);
   }
 

@@ -129,6 +129,18 @@ export function classifyHops(received: ReceivedHop[]): Hop[] {
     else if (!IS_MICROSOFT.test(fromLow) && !IS_MICROSOFT.test(byLow)) {
       role = i === 0 ? 'origin' : 'foreign';
     }
+    // by could not be parsed — infer from the from host
+    else if (byLow === '(unknown)') {
+      if (IS_EOP_OUTBOUND.test(fromLow)) {
+        role = 'sender-egress';
+      } else if (IS_M365_MAILBOX.test(fromLow) || IS_M365_TRANSPORT.test(fromLow)) {
+        role = i === 0 ? 'origin' : 'internal-transport';
+      } else if (IS_MICROSOFT.test(fromLow)) {
+        role = i === 0 ? 'origin' : 'internal-transport';
+      } else {
+        role = i === 0 ? 'origin' : 'foreign';
+      }
+    }
     else {
       role = 'unknown';
     }

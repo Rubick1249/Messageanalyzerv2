@@ -13,8 +13,8 @@ export interface ReceivedHop {
 export function parseReceived(value: string): ReceivedHop {
   const fromMatch = /\bfrom\s+(\S+)(?:\s+\(([^)]+)\))?/i.exec(value);
   const byMatch = /\bby\s+(\S+)/i.exec(value);
-  // Broadened to match ESMTP, ESMTPS, ESMTPA, LMTP, and other common protocols
-  const withMatch = /\bwith\s+((?:Microsoft SMTP Server|HTTPS|ESMTPS?A?|LMTP|SMTP)[^;(]*)/i.exec(value);
+  // Broadened to match ESMTP, ESMTPS, ESMTPA, LMTP, MAPI, HTTP variants, and other common protocols
+  const withMatch = /\bwith\s+((?:Microsoft SMTP Server|HTTPS?A?|ESMTPS?A?|LMTP|SMTP|mapi)[^;(]*)/i.exec(value);
   const tlsMatch = /version=(TLS\S+),\s*cipher=(\S+)/i.exec(value);
   // Accept dates with or without the optional day-name prefix (RFC 5322 §3.3)
   const dateMatch = /;\s*(.+)$/.exec(value);
