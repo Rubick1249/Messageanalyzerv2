@@ -77,7 +77,7 @@ export function HopTimeline({ hops }: Props) {
                 )}
                 {hop.by !== '(unknown)' && (
                   <div className="flex items-baseline gap-1.5 flex-wrap">
-                    <span className="text-xs text-text-tertiary w-8 shrink-0">by</span>
+                    <span className="text-xs text-text-tertiary w-8 shrink-0">to</span>
                     <code className="text-xs font-mono text-text-secondary break-all">{hop.by}</code>
                   </div>
                 )}
